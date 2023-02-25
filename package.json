@@ -4,11 +4,11 @@
   "description": "secp256k1 key did provider",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LIT-Protocol/key-did-provider-secp256k1.git"
+    "url": "git+https://github.com/indexas/key-did-provider-secp256k1.git"
   },
-  "homepage": "https://github.com/LIT-Protocol/key-did-provider-secp256k1",
+  "homepage": "https://github.com/indexas/key-did-provider-secp256k1",
   "bugs": {
-    "url": "https://github.com/LIT-Protocol/key-did-provider-secp256k1/issues"
+    "url": "https://github.com/indexas/key-did-provider-secp256k1/issues"
   },
   "author": "Anson (Lit Protocol)",
   "license": "(Apache-2.0 OR MIT)",
