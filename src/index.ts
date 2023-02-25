@@ -16,51 +16,10 @@ import {
   DIDMethodNameWithLit,
   DIDProviderMethodsWithLit,
   DIDProviderWithLit,
-  encodeDIDWithLitParam,
-  EcdsaSignature,
+  EcdsaSignature
 } from "./interfaces.js";
-// import * as IPFS from 'ipfs-core'
 
 const ec = new elliptic.ec("secp256k1");
-
-// /**
-//  *
-//  * Upload code to IPFS
-//  *
-//  * @example
-//  * ```
-//   const code = `
-//       const go = async () => {
-//           const sigShare = await LitActions.signEcdsa({ toSign, keyId, sigName });
-//       };
-//       go();
-//   `;
-
-//   const ipfsData  = await uploadToIPFS(code);
-//   console.log("ipfsData:", ipfsData);
-//   ```
-//  *
-//  * @param { string } code
-//  * @returns { IPFSData }
-//  */
-// export async function uploadToIPFS(code: string) : Promise<IPFSData> {
-
-//   log("[uploadToIPFS] param: ", code);
-
-//   const ipfs = await IPFS.create()
-
-//   const { path } = await ipfs.add(code)
-
-//   const data : IPFSData = {
-//     path: path,
-//     url: `https://ipfs.io/ipfs/${path}`,
-//   };
-
-//   log("[uploadToIPFS] data: ", data);
-
-//   return data
-
-// }
 
 /**
  *
@@ -85,6 +44,7 @@ export const litActionSignAndGetSignature = async (
   sha256Payload: Uint8Array,
   context: ContextWithLit
 ): Promise<EcdsaSignature> => {
+
   log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
 
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
@@ -99,29 +59,29 @@ export const litActionSignAndGetSignature = async (
 
   const jsParams = {
     toSign: Array.from(sha256Payload),
-    publicKey: decodeDIDWithLit(context.did),
+    keyId: decodeDIDWithLit(context.did),
     sigName: "sig1",
   };
 
+  log("[litActionSignAndGetSignature] jsParams:", jsParams);
+
   const executeOptions = {
-    ...((context.ipfsId === undefined || !context.ipfsId) && {
-      code: context.litCode,
-    }),
-    ...((context.litCode === undefined || !context.litCode) && {
-      ipfsId: context.ipfsId,
-    }),
+    ...(context.ipfsId === undefined || ! context.ipfsId) && {code: context.litCode},
+    ...(context.litCode === undefined || ! context.litCode) && {ipfsId: context.ipfsId},
     authSig,
     jsParams,
-  };
+  }
 
-  const response = await litNodeClient.executeJs(executeOptions);
+  const res = await litNodeClient.executeJs(executeOptions);
 
-  log("[litActionSignAndGetSignature] response:", response);
+  log("[litActionSignAndGetSignature] res.signatures:", res.signatures);
+
+  const signature = res.signatures;
 
   return {
-    r: response.signatures.sig1.r,
-    s: response.signatures.sig1.s,
-    recoveryParam: response.signatures.sig1.recid,
+    r: signature.sig1.r,
+    s: signature.sig1.s,
+    recoveryParam: signature.sig1.recid,
   };
 };
 
@@ -133,19 +93,20 @@ export const litActionSignAndGetSignature = async (
  * // -- get the DID (eg. did:key:xxxx )
  * const encodedDID = await encodeDIDWithLit();
  * ```
- *
+ * @param { string } pkpPublicKey
  * @returns {String} did a decentralised identifier
  */
 export async function encodeDIDWithLit(
-  param: encodeDIDWithLitParam
+  PKP_PUBLIC_KEY: string
 ): Promise<string> {
   // -- prepare
-  const PKP_PUBLIC_KEY = param.pkpPublicKey;
 
-  log("[encodeDIDWithLit] PKP_PUBLIC_KEY:", PKP_PUBLIC_KEY);
+  const pkpPubKey = PKP_PUBLIC_KEY.replace('0x', '')
+
+  log("[encodeDIDWithLit] pkpPubKey:", pkpPubKey);
 
   const pubBytes = ec
-    .keyFromPublic(PKP_PUBLIC_KEY, "hex")
+    .keyFromPublic(pkpPubKey, "hex")
     .getPublic(true, "array");
 
   log("[encodeDIDWithLit] pubBytes:", pubBytes);
@@ -164,44 +125,48 @@ export async function encodeDIDWithLit(
 }
 
 /**
- *
- * Decode encodedDID and return the PKP public key in a compressed form
- *
- * @param encodedDID
- * @returns { string } PKP Public Key in compressed form
+ * 
+ * Decode encodedDID and return the PKP public key in a uncompressed form
+ * 
+ * @param encodedDID 
+ * @returns { string } PKP Public Key in uncompressed form
  */
-export function decodeDIDWithLit(encodedDID: string): string {
-  // -- validate
-  const arr = encodedDID?.split(":");
+export function decodeDIDWithLit(
+  encodedDID: string
+): string {
 
-  if (arr[0] != "did") throw Error("string should start with did:");
-  if (arr[1] != "key") throw Error("string should start with did:key");
-  if (arr[2].charAt(0) !== "z")
-    throw Error("string should start with did:key:z");
+    log("[decodeDIDWithLit] encodedDID:", encodedDID);
 
-  const str = arr[2].substring(1);
+    // -- validate
+    const arr = encodedDID?.split(':');
 
-  log("[decodeDIDWithLit] str:", str);
+    if(arr[0] != 'did') throw Error('string should start with did:');
+    if(arr[1] != 'key') throw Error('string should start with did:key');
+    if(arr[2].charAt(0) !== 'z') throw Error('string should start with did:key:z');
 
-  const bytes = u8a.fromString(str, "base58btc");
+    const str = arr[2].substring(1);;
 
-  const originalBytes = new Uint8Array(bytes.length - 2);
+    log("[decodeDIDWithLit] str:", str);
 
-  bytes.forEach((_, i) => {
-    originalBytes[i] = bytes[i + 2];
-  });
+    const bytes = u8a.fromString(str, "base58btc");
 
-  log("[decodeDIDWithLit] originalBytes:", originalBytes);
+    const originalBytes = new Uint8Array(bytes.length - 2);
 
-  const pubPoint = ec.keyFromPublic(originalBytes).getPublic();
+    bytes.forEach((_, i) => {
+        originalBytes[i] = bytes[i + 2];
+    });
+    
+    log("[decodeDIDWithLit] originalBytes:", originalBytes);
 
-  let pubKey = pubPoint.encode("hex", true);
+    const pubPoint = ec.keyFromPublic(originalBytes).getPublic();
+    
+    let pubKey = pubPoint.encode('hex', false);
 
-  pubKey = pubKey.charAt(0) == "0" ? pubKey.substring(1) : pubKey;
+    pubKey = pubKey.charAt(0) == '0' ? pubKey.substring(1) : pubKey;
 
-  log("[decodeDIDWithLit] pubKey:", pubKey);
-
-  return pubKey;
+    log("[decodeDIDWithLit] pubKey:", pubKey);
+    
+    return '0x0' + pubKey;
 }
 
 /**
