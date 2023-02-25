@@ -47,7 +47,7 @@ export const litActionSignAndGetSignature = async (
 
   log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
 
-  const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
+  const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "mumbai" });
 
   log("[litActionSignAndGetSignature] authSig:", authSig);
 
@@ -59,7 +59,7 @@ export const litActionSignAndGetSignature = async (
 
   const jsParams = {
     toSign: Array.from(sha256Payload),
-    keyId: decodeDIDWithLit(context.did),
+    publicKey: decodeDIDWithLit(context.did),
     sigName: "sig1",
   };
 
