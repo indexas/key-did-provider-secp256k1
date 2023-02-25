@@ -46,7 +46,7 @@
 ```js
 const code = `
     const go = async () => {
-        const sigShare = await LitActions.signEcdsa({ toSign, keyId, sigName });
+        const sigShare = await LitActions.signEcdsa({ toSign, publicKey, sigName });
     };
     go();
 `;

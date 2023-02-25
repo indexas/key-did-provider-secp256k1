@@ -15,7 +15,7 @@ This is a `DID` provider which integrated Lit Actions x PKP powered by Lit Proto
 ## Installation
 
 ```
-yarn add key-did-provider-secp256k1-with-lit
+yarn add @indexas/key-did-provider-secp256k1-with-lit
 ```
 
 ## Usage
@@ -65,7 +65,7 @@ console.log("Specific doc:", loadDoc.content);
 ```js
 const code = `
     const go = async () => {
-        const sigShare = await LitActions.signEcdsa({ toSign, keyId, sigName });
+        const sigShare = await LitActions.signEcdsa({ toSign, publicKey, sigName });
     };
     go();
 `;
