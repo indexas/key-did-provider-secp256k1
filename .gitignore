@@ -5,3 +5,4 @@ dist
 __snapshots__
 *.js.map
 *.test.js
+.idea

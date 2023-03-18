@@ -9,7 +9,10 @@ import type {
 import { RPCError, createHandler } from "rpc-utils";
 import * as u8a from "uint8arrays";
 import elliptic from "elliptic";
-import LitJsSdk from "lit-js-sdk";
+
+import * as LitJsSdkNodeJs from "@lit-protocol/lit-node-client-nodejs";
+import { checkAndSignAuthMessage } from "@lit-protocol/auth-browser";
+
 import { toGeneralJWS, toJose, toStableObject, sha256, log } from "./util.js";
 import {
   ContextWithLit,
@@ -18,6 +21,7 @@ import {
   DIDProviderWithLit,
   EcdsaSignature
 } from "./interfaces.js";
+
 
 const ec = new elliptic.ec("secp256k1");
 
@@ -45,25 +49,22 @@ export const litActionSignAndGetSignature = async (
   context: ContextWithLit
 ): Promise<EcdsaSignature> => {
 
-  log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
+  const client = new LitJsSdkNodeJs.LitNodeClientNodeJs({
+    litNetwork: "serrano",
+    defaultAuthCallback: checkAndSignAuthMessage,
+  });
 
-  const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "mumbai" });
+  await client.connect();
 
-  log("[litActionSignAndGetSignature] authSig:", authSig);
-
-  const litNodeClient = new LitJsSdk.LitNodeClient({ litNetwork: "serrano" });
-
-  await litNodeClient.connect();
-
-  log("[litActionSignAndGetSignature] ipfsId:", context.ipfsId);
+  const authSig = await checkAndSignAuthMessage({
+    chain: "mumbai",
+  });
 
   const jsParams = {
     toSign: Array.from(sha256Payload),
     publicKey: decodeDIDWithLit(context.did),
     sigName: "sig1",
   };
-
-  log("[litActionSignAndGetSignature] jsParams:", jsParams);
 
   const executeOptions = {
     ...(context.ipfsId === undefined || ! context.ipfsId) && {code: context.litCode},
@@ -72,9 +73,7 @@ export const litActionSignAndGetSignature = async (
     jsParams,
   }
 
-  const res = await litNodeClient.executeJs(executeOptions);
-
-  log("[litActionSignAndGetSignature] res.signatures:", res.signatures);
+  const res = await client.executeJs(executeOptions)
 
   const signature = res.signatures;
 
@@ -125,10 +124,10 @@ export async function encodeDIDWithLit(
 }
 
 /**
- * 
+ *
  * Decode encodedDID and return the PKP public key in a uncompressed form
- * 
- * @param encodedDID 
+ *
+ * @param encodedDID
  * @returns { string } PKP Public Key in uncompressed form
  */
 export function decodeDIDWithLit(
@@ -155,17 +154,17 @@ export function decodeDIDWithLit(
     bytes.forEach((_, i) => {
         originalBytes[i] = bytes[i + 2];
     });
-    
+
     log("[decodeDIDWithLit] originalBytes:", originalBytes);
 
     const pubPoint = ec.keyFromPublic(originalBytes).getPublic();
-    
+
     let pubKey = pubPoint.encode('hex', false);
 
     pubKey = pubKey.charAt(0) == '0' ? pubKey.substring(1) : pubKey;
 
     log("[decodeDIDWithLit] pubKey:", pubKey);
-    
+
     return '0x0' + pubKey;
 }
 
