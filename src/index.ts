@@ -71,6 +71,7 @@ export const litActionSignAndGetSignature = async (
     ...(context.litCode === undefined || ! context.litCode) && {ipfsId: context.ipfsId},
     authSig,
     jsParams,
+    targetNodeRange: 1
   }
 
   const res = await client.executeJs(executeOptions)
