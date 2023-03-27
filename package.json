@@ -1,6 +1,6 @@
 {
   "name": "@indexas/key-did-provider-secp256k1-with-lit",
-  "version": "0.0.16",
+  "version": "0.0.19",
   "description": "secp256k1 key did provider",
   "repository": {
     "type": "git",
@@ -56,12 +56,12 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
-    "@lit-protocol/auth-browser": "^2.1.90",
-    "@lit-protocol/lit-node-client-nodejs": "^2.1.90",
+    "@lit-protocol/auth-browser": "^2.1.96",
+    "@lit-protocol/lit-node-client-nodejs": "^2.1.96",
     "@types/elliptic": "^6.4.14",
     "canonicalize": "^1.0.8",
-    "did-jwt": "^6.0.0",
-    "dids": "^3.0.0",
+    "did-jwt": "^6.11.5",
+    "dids": "^4.0.0",
     "elliptic": "^6.5.4",
     "fast-json-stable-stringify": "^2.1.0",
     "global": "^4.4.0",

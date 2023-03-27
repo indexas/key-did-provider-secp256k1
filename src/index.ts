@@ -71,7 +71,7 @@ export const litActionSignAndGetSignature = async (
     ...(context.litCode === undefined || ! context.litCode) && {ipfsId: context.ipfsId},
     authSig,
     jsParams,
-    targetNodeRange: 1
+    targetNodeRange: 1,
   }
 
   const res = await client.executeJs(executeOptions)
@@ -144,7 +144,7 @@ export function decodeDIDWithLit(
     if(arr[1] != 'key') throw Error('string should start with did:key');
     if(arr[2].charAt(0) !== 'z') throw Error('string should start with did:key:z');
 
-    const str = arr[2].substring(1);;
+    const str = arr[2].substring(1);
 
     log("[decodeDIDWithLit] str:", str);
 
