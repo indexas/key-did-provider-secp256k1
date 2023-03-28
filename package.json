@@ -1,6 +1,6 @@
 {
   "name": "@indexas/key-did-provider-secp256k1-with-lit",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "secp256k1 key did provider",
   "repository": {
     "type": "git",
