@@ -8,7 +8,8 @@ import type {
 import { RPCConnection } from "rpc-utils";
 
 export interface ContextWithLit {
-    did: string
+    did: string,
+    toSignObject?: object,
     ipfsId?: string,
     litCode?: string,
 }
@@ -34,7 +35,7 @@ export declare type DIDProviderMethodsWithLit = {
     did_createJWS: {
         params: CreateJWSParams;
         result: {
-        jws: GeneralJWS;
+            jws: GeneralJWS;
         };
     };
     did_decryptJWE: {
@@ -48,7 +49,7 @@ export declare type DIDProviderMethodsWithLit = {
 export declare type DIDMethodNameWithLit = keyof DIDProviderMethodsWithLit;
 
 export declare type DIDProviderWithLit = RPCConnection<DIDProviderMethodsWithLit>;
-  
+
 export interface IPFSData{
     path: string,
     url: string,

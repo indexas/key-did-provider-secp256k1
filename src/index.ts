@@ -11,9 +11,12 @@ import * as u8a from "uint8arrays";
 import elliptic from "elliptic";
 
 import * as LitJsSdkNodeJs from "@lit-protocol/lit-node-client-nodejs";
-import { checkAndSignAuthMessage } from "@lit-protocol/auth-browser";
 
-import { toGeneralJWS, toJose, toStableObject, sha256, log } from "./util.js";
+// This should be configurable. I'll leave it as a TODO.
+const checkAndSignAuthMessage = async () => {
+  return JSON.parse(localStorage.getItem("authSig")!);
+}
+import {toGeneralJWS, toJose, toStableObject, sha256, log, decodeLinkedBlock} from "./util.js";
 import {
   ContextWithLit,
   DIDMethodNameWithLit,
@@ -56,15 +59,17 @@ export const litActionSignAndGetSignature = async (
 
   await client.connect();
 
-  const authSig = await checkAndSignAuthMessage({
-    chain: "mumbai",
-  });
+  const authSig = await checkAndSignAuthMessage();
 
   const jsParams = {
     toSign: Array.from(sha256Payload),
-    publicKey: decodeDIDWithLit(context.did),
+    toSignObject: context.toSignObject,
+    did: context.did,
+    authSig,
     sigName: "sig1",
+    chain: "mumbai",
   };
+
 
   const executeOptions = {
     ...(context.ipfsId === undefined || ! context.ipfsId) && {code: context.litCode},
@@ -213,23 +218,14 @@ const signWithLit = async (
   payload: Record<string, any> | string,
   context: ContextWithLit
 ): Promise<string> => {
+
   const did = context.did;
-
-  log("[signWithLit] did:", did);
-
   const kid = `${did}#${did.split(":")[2]}`;
 
-  log("[signWithLit] kid:", kid);
-
   const protectedHeader: Record<string, any> = {};
-
   const header = toStableObject(
     Object.assign(protectedHeader, { kid, alg: "ES256K" })
   );
-
-  log("[signWithLit] header:", header);
-
-  log("[signWithLit] payload:", payload);
 
   return createJWS(
     typeof payload === "string" ? payload : toStableObject(payload),
@@ -249,13 +245,18 @@ const didMethodsWithLit: HandlerMethods<
     contextParam: ContextWithLit,
     params: AuthParams
   ) => {
+
     const payload = {
       did: contextParam.did,
       aud: params.aud,
       nonce: params.nonce,
       paths: params.paths,
-      exp: Math.floor(Date.now() / 1000) + 600, // expires 10 min from now
+      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 30),
     };
+
+    //TODO here is a dirty hack to pass the toSignObject to the lit action.
+    //We will validate sha256 equality in the lit action.
+    contextParam.toSignObject = payload;
 
     log("[didMethodsWithLit] payload:", payload);
 
@@ -271,16 +272,27 @@ const didMethodsWithLit: HandlerMethods<
   },
   did_createJWS: async (
     contextParam: ContextWithLit,
-    params: CreateJWSParams & { did: string }
+    params: CreateJWSParams
   ) => {
     const requestDid = params.did.split("#")[0];
     if (requestDid !== contextParam.did)
       throw new RPCError(4100, `Unknown DID: ${contextParam.did}`);
+
+    /*
+    We are sending toSignObject to lit action for validating it.
+    We are re-creating toSign parameter with toSignObject and DID and comparing it with the sent in the request.
+    That way we can ensure that we are validating the correct document body.
+    If you remove this field; lit action cannot access the raw body.
+    */
+    contextParam.toSignObject = decodeLinkedBlock(params.linkedBlock!)
+
     const jws = await signWithLit(params.payload, contextParam);
+
+    const general = toGeneralJWS(jws)
 
     log("[did_createJWS] jws:", jws);
 
-    return { jws: toGeneralJWS(jws) };
+    return { jws: general };
   },
   did_decryptJWE: async () => {
     // Not implemented

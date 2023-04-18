@@ -3,6 +3,7 @@ import { base64ToBytes } from 'did-jwt'
 import type { GeneralJWS } from 'dids'
 import stringify from 'fast-json-stable-stringify'
 import { hash } from '@stablelib/sha256'
+import * as dagCBOR from '@ipld/dag-cbor';
 import { EcdsaSignature } from './interfaces'
 
 export function sha256(payload: string | Uint8Array): Uint8Array {
@@ -33,7 +34,7 @@ export function toGeneralJWS(jws: string): GeneralJWS {
         signatures: [{ protected: protectedHeader, signature }],
     }
 }
-  
+
 export function toJose({ r, s, recoveryParam }: EcdsaSignature, recoverable?: boolean): string {
     const jose = new Uint8Array(recoverable ? 65 : 64)
     jose.set(u8a.fromString(r, 'base16'), 0)
@@ -74,34 +75,34 @@ export function getInstanceType (value: any){
 
 /**
  * Pretty log file with prefix and color
- * @param name 
- * @param value 
- * @param printObj 
- * @returns 
+ * @param name
+ * @param value
+ * @param printObj
+ * @returns
  */
 export function log(name: string, value: any = null, printObj: boolean = false){
 
     const PREFIX = '[key-did-provider-secp256k1]';
     const STYLE = 'color: #5FA227';
-    
+
     if( value !== null){
         const instanceType = getInstanceType(value);
-    
+
         let text : string;
-    
+
         try{
             text = JSON.stringify(value);
         }catch(e){
             text = '';
         }
-    
+
         if( printObj == false){
             console.log(`%c${PREFIX}: ${name}${instanceType != null ? `(${instanceType})` : ''} "${text}"`, `${STYLE}`);
             return;
         }
-    
+
         console.log(`%c${PREFIX}: ${name}${instanceType != null ? `(${instanceType})` : ''}`, `${STYLE}`);
-    
+
         console.log(value);
 
         return;
@@ -110,3 +111,9 @@ export function log(name: string, value: any = null, printObj: boolean = false){
     console.log(`[key-did-provider-secp256k1]: ${name}$`);
 
 }
+
+
+export function decodeLinkedBlock(linkedBlock: string) : object {
+    const linkedBlockArray = u8a.fromString(linkedBlock, "base64pad");
+    return dagCBOR.decode(linkedBlockArray);
+};
